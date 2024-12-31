@@ -3,6 +3,7 @@ function FileAnalyzer() {
     const [progress, setProgress] = React.useState(0);
     const [error, setError] = React.useState('');
     const [analyzing, setAnalyzing] = React.useState(false);
+    const [result, setResult] = React.useState(null);
 
     const handleFileChange = (event) => {
         const selectedFile = event.target.files[0];
@@ -12,90 +13,44 @@ function FileAnalyzer() {
         }
     };
 
-    const simulateAnalysis = () => {
+    const handleSubmit = (event) => {
+        event.preventDefault();
+        if (!file) {
+            setError('Por favor seleccione un archivo');
+            return;
+        }
+        
         setAnalyzing(true);
         setProgress(0);
+        setError('');
         
-        const interval = setInterval(() => {
-            setProgress((prevProgress) => {
-                if (prevProgress >= 100) {
-                    clearInterval(interval);
-                    setAnalyzing(false);
-                    return 100;
-                }
-                return prevProgress + 10;
-            });
-        }, 500);
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        fetch('https://ee-wx95.onrender.com/analyze', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Error en el análisis');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            setResult(data);
+            setAnalyzing(false);
+            setProgress(100);
+        })
+        .catch(error => {
+            console.error('Error details:', error);
+            setError('Error al procesar el archivo: ' + (error.message || 'Error desconocido'));
+            setAnalyzing(false);
+            setProgress(0);
+        });
     };
-
-
-    const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!file) {
-        setError('Por favor seleccione un archivo');
-        return;
-    }
-    
-    setAnalyzing(true);
-    setProgress(0);
-    setError('');
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const response = await fetch('YOUR_RENDER_URL/analyze', {
-            method: 'POST',
-            body: formData,
-        });
-        
-        const result = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(result.error || 'Error en el análisis');
-        }
-        
-        // Update UI with results
-        setAnalysisResult(result);
-        setAnalyzing(false);
-        setProgress(100);
-        
-    } catch (error) {
-        console.error('Error details:', error);
-        setError('Error al procesar el archivo: ' + (error.message || 'Error desconocido'));
-        setAnalyzing(false);
-        setProgress(0);
-    }
-};
-    
-    setAnalyzing(true);
-    setProgress(0);
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const response = await fetch('https://ee-wx95.onrender.com/analyze', {
-            method: 'POST',
-            body: formData,
-        });
-        
-        if (!response.ok) {
-            throw new Error('Error en el análisis');
-        }
-        
-        const result = await response.json();
-        
-        // Update UI with results
-        setAnalysisResult(result);
-        setAnalyzing(false);
-        setProgress(100);
-        
-    } catch (error) {
-        setError('Error al procesar el archivo: ' + error.message);
-        setAnalyzing(false);
-    }
-};
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
@@ -115,8 +70,8 @@ function FileAnalyzer() {
                             
                             <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-500 transition-colors">
                                 <div className="space-y-1 text-center">
-                                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/>
+                                    <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                        <path d="M24 8v32M8 24h32" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                                     </svg>
                                     <div className="flex text-sm text-gray-600">
                                         <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
@@ -125,11 +80,12 @@ function FileAnalyzer() {
                                                 type="file"
                                                 className="sr-only"
                                                 onChange={handleFileChange}
+                                                accept=".docx"
                                             />
                                         </label>
                                     </div>
                                     <p className="text-xs text-gray-500">
-                                        {file ? file.name : 'DOC, PDF hasta 10MB'}
+                                        {file ? file.name : 'DOCX hasta 10MB'}
                                     </p>
                                 </div>
                             </div>
@@ -145,7 +101,7 @@ function FileAnalyzer() {
                             <div className="space-y-2">
                                 <div className="h-2 bg-gray-200 rounded-full">
                                     <div
-                                        className="h-2 bg-blue-600 rounded-full progress-bar"
+                                        className="h-2 bg-blue-600 rounded-full transition-all duration-500"
                                         style={{ width: `${progress}%` }}
                                     />
                                 </div>
@@ -155,9 +111,20 @@ function FileAnalyzer() {
                             </div>
                         )}
 
+                        {result && (
+                            <div className="mt-4 space-y-4">
+                                <div className="bg-gray-50 p-4 rounded-md">
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">Análisis:</h3>
+                                    <div className="prose max-w-none">
+                                        {result.analysis}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         <button
                             type="submit"
-                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={analyzing}
                         >
                             {analyzing ? 'Procesando...' : 'Analizar Archivo'}
