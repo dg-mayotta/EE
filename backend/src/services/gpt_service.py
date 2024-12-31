@@ -9,7 +9,9 @@ def analyze_with_gpt(text):
     print(f"OpenAI API Key exists: {bool(OPENAI_API_KEY)}")  # Debug without exposing key
     
     try:
-        openai.api_key = Config.OPENAI_API_KEY
+        openai.api_key = OPENAI_API_KEY
+        openai.api_version = '2023-05-15'  # Use latest stable version
+        print("OpenAI configuration set")
         
         prompt = f"""
         Please analyze the following text and:
