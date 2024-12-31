@@ -28,12 +28,45 @@ function FileAnalyzer() {
         }, 500);
     };
 
+
     const handleSubmit = async (event) => {
     event.preventDefault();
     if (!file) {
         setError('Por favor seleccione un archivo');
         return;
     }
+    
+    setAnalyzing(true);
+    setProgress(0);
+    setError('');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('YOUR_RENDER_URL/analyze', {
+            method: 'POST',
+            body: formData,
+        });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Error en el análisis');
+        }
+        
+        // Update UI with results
+        setAnalysisResult(result);
+        setAnalyzing(false);
+        setProgress(100);
+        
+    } catch (error) {
+        console.error('Error details:', error);
+        setError('Error al procesar el archivo: ' + (error.message || 'Error desconocido'));
+        setAnalyzing(false);
+        setProgress(0);
+    }
+};
     
     setAnalyzing(true);
     setProgress(0);
