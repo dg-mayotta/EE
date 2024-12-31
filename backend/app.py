@@ -61,10 +61,14 @@ def analyze_with_gpt(text):
     Analyze text using GPT-4
     """
     try:
+        print("Starting GPT analysis...")  # Debug log
+        print(f"OpenAI API Key exists: {bool(OPENAI_API_KEY)}")  # Debug without exposing key
+        
         if not OPENAI_API_KEY:
             raise ValueError("OpenAI API key not found in environment variables")
             
-        openai.api_key = OPENAI_API_KEY
+        client = openai.OpenAI()
+        print("OpenAI configuration set")
         
         print(f"Sending chunk of length {len(text)} to GPT")  # Debug log
         
@@ -77,7 +81,7 @@ def analyze_with_gpt(text):
         {text}
         """
         
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": "You are an expert analyst. Provide clear, structured analysis of documents."},
@@ -86,8 +90,11 @@ def analyze_with_gpt(text):
             temperature=TEMPERATURE,
             max_tokens=MAX_CHUNK_SIZE
         )
+        print("GPT API call successful")
         
-        return response.choices[0].message.content
+        result = response.choices[0].message.content
+        print(f"Analysis complete, response length: {len(result)}")
+        return result
         
     except Exception as e:
         print(f"Error in analyze_with_gpt: {str(e)}")  # Debug log
