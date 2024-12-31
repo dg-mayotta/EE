@@ -28,14 +28,41 @@ function FileAnalyzer() {
         }, 500);
     };
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        if (!file) {
-            setError('Por favor seleccione un archivo');
-            return;
+    const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!file) {
+        setError('Por favor seleccione un archivo');
+        return;
+    }
+    
+    setAnalyzing(true);
+    setProgress(0);
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('https://ee-wx95.onrender.com/analyze', {
+            method: 'POST',
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error en el análisis');
         }
-        simulateAnalysis();
-    };
+        
+        const result = await response.json();
+        
+        // Update UI with results
+        setAnalysisResult(result);
+        setAnalyzing(false);
+        setProgress(100);
+        
+    } catch (error) {
+        setError('Error al procesar el archivo: ' + error.message);
+        setAnalyzing(false);
+    }
+};
 
     return (
         <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
