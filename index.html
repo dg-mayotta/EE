@@ -5,12 +5,168 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analizador de Archivos</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <style>
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <div id="root"></div>
-    <script type="text/babel" src="app.js"></script>
+    <script type="text/babel">
+        function FileAnalyzer() {
+            const [file, setFile] = React.useState(null);
+            const [progress, setProgress] = React.useState(0);
+            const [error, setError] = React.useState('');
+            const [analyzing, setAnalyzing] = React.useState(false);
+            const [result, setResult] = React.useState(null);
+
+            function handleFileChange(event) {
+                const selectedFile = event.target.files[0];
+                if (selectedFile) {
+                    setFile(selectedFile);
+                    setError('');
+                }
+            }
+
+            function handleSubmit(event) {
+                event.preventDefault();
+                if (!file) {
+                    setError('Por favor seleccione un archivo');
+                    return;
+                }
+                
+                setAnalyzing(true);
+                setProgress(0);
+                setError('');
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Start progress simulation
+                const progressInterval = setInterval(function() {
+                    setProgress(oldProgress => {
+                        if (oldProgress >= 90) {
+                            clearInterval(progressInterval);
+                            return 90;
+                        }
+                        return oldProgress + 10;
+                    });
+                }, 500);
+
+                fetch('https://ee-wx95.onrender.com/analyze', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    clearInterval(progressInterval);
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    setResult(data);
+                    setProgress(100);
+                    setAnalyzing(false);
+                })
+                .catch(function(error) {
+                    clearInterval(progressInterval);
+                    console.error('Error:', error);
+                    setError('Error al procesar el archivo: ' + error.message);
+                    setAnalyzing(false);
+                    setProgress(0);
+                });
+            }
+
+            return (
+                <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+                    <div className="max-w-md mx-auto">
+                        <div className="text-center">
+                            <h2 className="text-3xl font-bold text-gray-900 mb-8">
+                                Analizador de Archivos
+                            </h2>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-lg shadow-md">
+                            <form onSubmit={handleSubmit} className="space-y-6">
+                                <div className="space-y-4">
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Seleccionar Archivo
+                                    </label>
+                                    
+                                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-500 transition-colors">
+                                        <div className="space-y-1 text-center">
+                                            <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                <path d="M24 8v32M8 24h32" strokeWidth="2" strokeLinecap="round"/>
+                                            </svg>
+                                            <div className="flex text-sm text-gray-600">
+                                                <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
+                                                    <span>Subir un archivo</span>
+                                                    <input
+                                                        type="file"
+                                                        className="sr-only"
+                                                        onChange={handleFileChange}
+                                                        accept=".docx"
+                                                    />
+                                                </label>
+                                            </div>
+                                            <p className="text-xs text-gray-500">
+                                                {file ? file.name : 'DOCX hasta 10MB'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {error && (
+                                    <div className="bg-red-50 border-l-4 border-red-400 p-4">
+                                        <p className="text-red-700">{error}</p>
+                                    </div>
+                                )}
+
+                                {analyzing && (
+                                    <div className="space-y-2">
+                                        <div className="h-2 bg-gray-200 rounded-full">
+                                            <div
+                                                className="h-2 bg-blue-600 rounded-full progress-bar"
+                                                style={{ width: `${progress}%` }}
+                                            />
+                                        </div>
+                                        <p className="text-sm text-gray-600 text-center">
+                                            Analizando... {progress}%
+                                        </p>
+                                    </div>
+                                )}
+
+                                {result && (
+                                    <div className="mt-4 space-y-4">
+                                        <div className="bg-gray-50 p-4 rounded-md">
+                                            <h3 className="text-lg font-medium text-gray-900 mb-2">Análisis:</h3>
+                                            <div className="prose max-w-none whitespace-pre-wrap">
+                                                {result.analysis}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                                    disabled={analyzing}
+                                >
+                                    {analyzing ? 'Procesando...' : 'Analizar Archivo'}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<FileAnalyzer />, document.getElementById('root'));
+    </script>
 </body>
 </html>
