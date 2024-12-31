@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from services.docx_service import process_docx
 from services.gpt_service import analyze_with_gpt
-from services.translation_service import translate_text
 from utils.text_chunker import chunk_text
 import os
 
@@ -30,12 +29,9 @@ def analyze_document():
         extracted_text = process_docx(file)
         if not extracted_text:
             return jsonify({"error": "Failed to extract text from document"}), 400
-
-        # Translate to English
-        translated_text = translate_text(extracted_text)
         
         # Split into chunks if necessary
-        text_chunks = chunk_text(translated_text)
+        text_chunks = chunk_text(extracted_text)
         
         # Analyze with GPT-4
         results = []
@@ -46,7 +42,6 @@ def analyze_document():
         # Combine results
         final_result = {
             "original_text": extracted_text,
-            "translated_text": translated_text,
             "analysis": results
         }
         
