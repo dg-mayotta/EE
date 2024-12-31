@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from docx import Document
-import openai
+from openai import OpenAI
 import re
 import os
 import traceback
@@ -67,7 +67,7 @@ def analyze_with_gpt(text):
         if not OPENAI_API_KEY:
             raise ValueError("OpenAI API key not found in environment variables")
             
-        client = openai.OpenAI()
+        client = OpenAI(api_key=OPENAI_API_KEY)
         print("OpenAI configuration set")
         
         print(f"Sending chunk of length {len(text)} to GPT")  # Debug log
