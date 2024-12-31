@@ -5,6 +5,9 @@ def analyze_with_gpt(text):
     """
     Analyze text using GPT-4
     """
+    print("Starting GPT analysis...")  # Debug log
+    print(f"OpenAI API Key exists: {bool(OPENAI_API_KEY)}")  # Debug without exposing key
+    
     try:
         openai.api_key = Config.OPENAI_API_KEY
         
